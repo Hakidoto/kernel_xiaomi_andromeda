@@ -1861,6 +1861,7 @@ int goodix_ts_fb_notifier_callback(struct notifier_block *self,
 		if (event == DRM_EVENT_BLANK && (blank == DRM_BLANK_POWERDOWN ||
 			blank == DRM_BLANK_LP1 || blank == DRM_BLANK_LP2)) {
 			ts_info("touchpanel suspend .....blank=%d\n",blank);
+
 			ts_info("touchpanel suspend .....suspend_stat=%d\n", atomic_read(&core_data->suspend_stat));
 			if (atomic_read(&core_data->suspend_stat))
 				return 0;

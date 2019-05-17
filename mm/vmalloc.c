@@ -324,8 +324,8 @@ EXPORT_SYMBOL(vmalloc_to_pfn);
 
 /*** Global kva allocator ***/
 
-#define VM_LAZY_FREE	0x02
-#define VM_VM_AREA	0x04
+#define DEBUG_AUGMENT_PROPAGATE_CHECK 0
+
 
 static DEFINE_SPINLOCK(vmap_area_lock);
 /* Export for kexec only */
@@ -418,7 +418,465 @@ static struct vmap_area *__find_vmap_area(unsigned long addr)
 	return NULL;
 }
 
-static void __insert_vmap_area(struct vmap_area *va)
+/*
+ * This function returns back addresses of parent node
+ * and its left or right link for further processing.
+ */
+static __always_inline struct rb_node **
+find_va_links(struct vmap_area *va,
+	struct rb_root *root, struct rb_node *from,
+	struct rb_node **parent)
+{
+	struct vmap_area *tmp_va;
+	struct rb_node **link;
+
+	if (root) {
+		link = &root->rb_node;
+		if (unlikely(!*link)) {
+			*parent = NULL;
+			return link;
+		}
+	} else {
+		link = &from;
+	}
+
+	/*
+	 * Go to the bottom of the tree. When we hit the last point
+	 * we end up with parent rb_node and correct direction, i name
+	 * it link, where the new va->rb_node will be attached to.
+	 */
+	do {
+		tmp_va = rb_entry(*link, struct vmap_area, rb_node);
+
+		/*
+		 * During the traversal we also do some sanity check.
+		 * Trigger the BUG() if there are sides(left/right)
+		 * or full overlaps.
+		 */
+		if (va->va_start < tmp_va->va_end &&
+				va->va_end <= tmp_va->va_start)
+			link = &(*link)->rb_left;
+		else if (va->va_end > tmp_va->va_start &&
+				va->va_start >= tmp_va->va_end)
+			link = &(*link)->rb_right;
+		else
+			BUG();
+	} while (*link);
+
+	*parent = &tmp_va->rb_node;
+	return link;
+}
+
+static __always_inline struct list_head *
+get_va_next_sibling(struct rb_node *parent, struct rb_node **link)
+{
+	struct list_head *list;
+
+	if (unlikely(!parent))
+		/*
+		 * The red-black tree where we try to find VA neighbors
+		 * before merging or inserting is empty, i.e. it means
+		 * there is no free vmap space. Normally it does not
+		 * happen but we handle this case anyway.
+		 */
+		return NULL;
+
+	list = &rb_entry(parent, struct vmap_area, rb_node)->list;
+	return (&parent->rb_right == link ? list->next : list);
+}
+
+static __always_inline void
+link_va(struct vmap_area *va, struct rb_root *root,
+	struct rb_node *parent, struct rb_node **link, struct list_head *head)
+{
+	/*
+	 * VA is still not in the list, but we can
+	 * identify its future previous list_head node.
+	 */
+	if (likely(parent)) {
+		head = &rb_entry(parent, struct vmap_area, rb_node)->list;
+		if (&parent->rb_right != link)
+			head = head->prev;
+	}
+
+	/* Insert to the rb-tree */
+	rb_link_node(&va->rb_node, parent, link);
+	if (root == &free_vmap_area_root) {
+		/*
+		 * Some explanation here. Just perform simple insertion
+		 * to the tree. We do not set va->subtree_max_size to
+		 * its current size before calling rb_insert_augmented().
+		 * It is because of we populate the tree from the bottom
+		 * to parent levels when the node _is_ in the tree.
+		 *
+		 * Therefore we set subtree_max_size to zero after insertion,
+		 * to let __augment_tree_propagate_from() puts everything to
+		 * the correct order later on.
+		 */
+		rb_insert_augmented(&va->rb_node,
+			root, &free_vmap_area_rb_augment_cb);
+		va->subtree_max_size = 0;
+	} else {
+		rb_insert_color(&va->rb_node, root);
+	}
+
+	/* Address-sort this list */
+	list_add(&va->list, head);
+}
+
+static __always_inline void
+unlink_va(struct vmap_area *va, struct rb_root *root)
+{
+	if (WARN_ON(RB_EMPTY_NODE(&va->rb_node)))
+		return;
+
+	if (root == &free_vmap_area_root)
+		rb_erase_augmented(&va->rb_node,
+			root, &free_vmap_area_rb_augment_cb);
+	else
+		rb_erase(&va->rb_node, root);
+
+	list_del(&va->list);
+	RB_CLEAR_NODE(&va->rb_node);
+}
+
+#if DEBUG_AUGMENT_PROPAGATE_CHECK
+static void
+augment_tree_propagate_check(struct rb_node *n)
+{
+	struct vmap_area *va;
+	struct rb_node *node;
+	unsigned long size;
+	bool found = false;
+
+	if (n == NULL)
+		return;
+
+	va = rb_entry(n, struct vmap_area, rb_node);
+	size = va->subtree_max_size;
+	node = n;
+
+	while (node) {
+		va = rb_entry(node, struct vmap_area, rb_node);
+
+		if (get_subtree_max_size(node->rb_left) == size) {
+			node = node->rb_left;
+		} else {
+			if (va_size(va) == size) {
+				found = true;
+				break;
+			}
+
+			node = node->rb_right;
+		}
+	}
+
+	if (!found) {
+		va = rb_entry(n, struct vmap_area, rb_node);
+		pr_emerg("tree is corrupted: %lu, %lu\n",
+			va_size(va), va->subtree_max_size);
+	}
+
+	augment_tree_propagate_check(n->rb_left);
+	augment_tree_propagate_check(n->rb_right);
+}
+#endif
+
+#if DEBUG_AUGMENT_PROPAGATE_CHECK
+static void
+augment_tree_propagate_check(struct rb_node *n)
+{
+	struct vmap_area *va;
+	struct rb_node *node;
+	unsigned long size;
+	bool found = false;
+
+	if (n == NULL)
+		return;
+
+	va = rb_entry(n, struct vmap_area, rb_node);
+	size = va->subtree_max_size;
+	node = n;
+
+	while (node) {
+		va = rb_entry(node, struct vmap_area, rb_node);
+
+		if (get_subtree_max_size(node->rb_left) == size) {
+			node = node->rb_left;
+		} else {
+			if (va_size(va) == size) {
+				found = true;
+				break;
+			}
+
+			node = node->rb_right;
+		}
+	}
+
+	if (!found) {
+		va = rb_entry(n, struct vmap_area, rb_node);
+		pr_emerg("tree is corrupted: %lu, %lu\n",
+			va_size(va), va->subtree_max_size);
+	}
+
+	augment_tree_propagate_check(n->rb_left);
+	augment_tree_propagate_check(n->rb_right);
+}
+#endif
+
+/*
+ * This function populates subtree_max_size from bottom to upper
+ * levels starting from VA point. The propagation must be done
+ * when VA size is modified by changing its va_start/va_end. Or
+ * in case of newly inserting of VA to the tree.
+ *
+ * It means that __augment_tree_propagate_from() must be called:
+ * - After VA has been inserted to the tree(free path);
+ * - After VA has been shrunk(allocation path);
+ * - After VA has been increased(merging path).
+ *
+ * Please note that, it does not mean that upper parent nodes
+ * and their subtree_max_size are recalculated all the time up
+ * to the root node.
+ *
+ *       4--8
+ *        /\
+ *       /  \
+ *      /    \
+ *    2--2  8--8
+ *
+ * For example if we modify the node 4, shrinking it to 2, then
+ * no any modification is required. If we shrink the node 2 to 1
+ * its subtree_max_size is updated only, and set to 1. If we shrink
+ * the node 8 to 6, then its subtree_max_size is set to 6 and parent
+ * node becomes 4--6.
+ */
+static __always_inline void
+augment_tree_propagate_from(struct vmap_area *va)
+{
+	struct rb_node *node = &va->rb_node;
+	unsigned long new_va_sub_max_size;
+
+	while (node) {
+		va = rb_entry(node, struct vmap_area, rb_node);
+		new_va_sub_max_size = compute_subtree_max_size(va);
+
+		/*
+		 * If the newly calculated maximum available size of the
+		 * subtree is equal to the current one, then it means that
+		 * the tree is propagated correctly. So we have to stop at
+		 * this point to save cycles.
+		 */
+		if (va->subtree_max_size == new_va_sub_max_size)
+			break;
+
+		va->subtree_max_size = new_va_sub_max_size;
+		node = rb_parent(&va->rb_node);
+	}
+
+#if DEBUG_AUGMENT_PROPAGATE_CHECK
+	augment_tree_propagate_check(free_vmap_area_root.rb_node);
+#endif
+}
+
+static void
+insert_vmap_area(struct vmap_area *va,
+	struct rb_root *root, struct list_head *head)
+{
+	struct rb_node **link;
+	struct rb_node *parent;
+
+	link = find_va_links(va, root, NULL, &parent);
+	link_va(va, root, parent, link, head);
+}
+
+static void
+insert_vmap_area_augment(struct vmap_area *va,
+	struct rb_node *from, struct rb_root *root,
+	struct list_head *head)
+{
+	struct rb_node **link;
+	struct rb_node *parent;
+
+	if (from)
+		link = find_va_links(va, NULL, from, &parent);
+	else
+		link = find_va_links(va, root, NULL, &parent);
+
+	link_va(va, root, parent, link, head);
+	augment_tree_propagate_from(va);
+}
+
+/*
+ * Merge de-allocated chunk of VA memory with previous
+ * and next free blocks. If coalesce is not done a new
+ * free area is inserted. If VA has been merged, it is
+ * freed.
+ */
+static __always_inline void
+merge_or_add_vmap_area(struct vmap_area *va,
+	struct rb_root *root, struct list_head *head)
+{
+	struct vmap_area *sibling;
+	struct list_head *next;
+	struct rb_node **link;
+	struct rb_node *parent;
+	bool merged = false;
+
+	/*
+	 * Find a place in the tree where VA potentially will be
+	 * inserted, unless it is merged with its sibling/siblings.
+	 */
+	link = find_va_links(va, root, NULL, &parent);
+
+	/*
+	 * Get next node of VA to check if merging can be done.
+	 */
+	next = get_va_next_sibling(parent, link);
+	if (unlikely(next == NULL))
+		goto insert;
+
+	/*
+	 * start            end
+	 * |                |
+	 * |<------VA------>|<-----Next----->|
+	 *                  |                |
+	 *                  start            end
+	 */
+	if (next != head) {
+		sibling = list_entry(next, struct vmap_area, list);
+		if (sibling->va_start == va->va_end) {
+			sibling->va_start = va->va_start;
+
+			/* Check and update the tree if needed. */
+			augment_tree_propagate_from(sibling);
+
+			/* Free vmap_area object. */
+			kmem_cache_free(vmap_area_cachep, va);
+
+			/* Point to the new merged area. */
+			va = sibling;
+			merged = true;
+		}
+	}
+
+	/*
+	 * start            end
+	 * |                |
+	 * |<-----Prev----->|<------VA------>|
+	 *                  |                |
+	 *                  start            end
+	 */
+	if (next->prev != head) {
+		sibling = list_entry(next->prev, struct vmap_area, list);
+		if (sibling->va_end == va->va_start) {
+			sibling->va_end = va->va_end;
+
+			/* Check and update the tree if needed. */
+			augment_tree_propagate_from(sibling);
+
+			if (merged)
+				unlink_va(va, root);
+
+			/* Free vmap_area object. */
+			kmem_cache_free(vmap_area_cachep, va);
+			return;
+		}
+	}
+
+insert:
+	if (!merged) {
+		link_va(va, root, parent, link, head);
+		augment_tree_propagate_from(va);
+	}
+}
+
+static __always_inline bool
+is_within_this_va(struct vmap_area *va, unsigned long size,
+	unsigned long align, unsigned long vstart)
+{
+	unsigned long nva_start_addr;
+
+	if (va->va_start > vstart)
+		nva_start_addr = ALIGN(va->va_start, align);
+	else
+		nva_start_addr = ALIGN(vstart, align);
+
+	/* Can be overflowed due to big size or alignment. */
+	if (nva_start_addr + size < nva_start_addr ||
+			nva_start_addr < vstart)
+		return false;
+
+	return (nva_start_addr + size <= va->va_end);
+}
+
+/*
+ * Find the first free block(lowest start address) in the tree,
+ * that will accomplish the request corresponding to passing
+ * parameters.
+ */
+static __always_inline struct vmap_area *
+find_vmap_lowest_match(unsigned long size,
+	unsigned long align, unsigned long vstart)
+{
+	struct vmap_area *va;
+	struct rb_node *node;
+	unsigned long length;
+
+	/* Start from the root. */
+	node = free_vmap_area_root.rb_node;
+
+	/* Adjust the search size for alignment overhead. */
+	length = size + align - 1;
+
+	while (node) {
+		va = rb_entry(node, struct vmap_area, rb_node);
+
+		if (get_subtree_max_size(node->rb_left) >= length &&
+				vstart < va->va_start) {
+			node = node->rb_left;
+		} else {
+			if (is_within_this_va(va, size, align, vstart))
+				return va;
+
+			/*
+			 * Does not make sense to go deeper towards the right
+			 * sub-tree if it does not have a free block that is
+			 * equal or bigger to the requested search length.
+			 */
+			if (get_subtree_max_size(node->rb_right) >= length) {
+				node = node->rb_right;
+				continue;
+			}
+
+			/*
+			 * OK. We roll back and find the first right sub-tree,
+			 * that will satisfy the search criteria. It can happen
+			 * only once due to "vstart" restriction.
+			 */
+			while ((node = rb_parent(node))) {
+				va = rb_entry(node, struct vmap_area, rb_node);
+				if (is_within_this_va(va, size, align, vstart))
+					return va;
+
+				if (get_subtree_max_size(node->rb_right) >= length &&
+						vstart <= va->va_start) {
+					node = node->rb_right;
+					break;
+				}
+			}
+		}
+	}
+
+	return NULL;
+}
+
+#if DEBUG_AUGMENT_LOWEST_MATCH_CHECK
+#include <linux/random.h>
+
+static struct vmap_area *
+find_vmap_lowest_linear_match(unsigned long size,
+	unsigned long align, unsigned long vstart)
 {
 	struct rb_node **p = &vmap_area_root.rb_node;
 	struct rb_node *parent = NULL;

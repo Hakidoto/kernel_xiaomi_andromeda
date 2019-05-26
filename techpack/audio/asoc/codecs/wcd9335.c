@@ -14328,7 +14328,7 @@ static int tasha_probe(struct platform_device *pdev)
 	}
 	/* Update codec register default values */
 	tasha_update_reg_defaults(tasha);
-	schedule_work(&tasha->tasha_add_child_devices_work);
+	queue_delayed_work(system_power_efficient_wq, &tasha->tasha_add_child_devices_work);
 	tasha_get_codec_ver(tasha);
 	ret = snd_event_client_register(pdev->dev.parent, &tasha_ssr_ops, NULL);
 	if (!ret) {

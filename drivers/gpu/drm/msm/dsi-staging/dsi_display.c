@@ -20,6 +20,8 @@
 #include <linux/err.h>
 #include <drm/drm_notifier.h>
 
+#include <linux/msm_drm_notify.h>
+
 #include "msm_drv.h"
 #include "sde_connector.h"
 #include "msm_mmu.h"
@@ -1231,6 +1233,8 @@ int dsi_display_set_power(struct drm_connector *connector,
 		int power_mode, void *disp)
 {
 	struct dsi_display *display = disp;
+	struct msm_drm_notifier notify_data;
+	int event = power_mode;
 	int rc = 0;
 	struct drm_notify_data g_notify_data;
 	struct drm_device *dev = NULL;
@@ -1242,33 +1246,26 @@ int dsi_display_set_power(struct drm_connector *connector,
 		return -EINVAL;
 	}
 
-        if (!connector || !connector->dev) {
-                pr_err("invalid connector/dev\n");
-                return -EINVAL;
-        } else {
-                dev = connector->dev;
-                event = dev->doze_state;
-        }
+	notify_data.data = &event;
 
-	g_notify_data.data = &event;
-	pr_info("%s %d\n", __func__, event);
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:
-		drm_notifier_call_chain(DRM_EARLY_EVENT_BLANK, &g_notify_data);
+		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &notify_data);
 		rc = dsi_panel_set_lp1(display->panel);
-		drm_notifier_call_chain(DRM_EVENT_BLANK, &g_notify_data);
+		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &notify_data);
 		break;
 	case SDE_MODE_DPMS_LP2:
-		drm_notifier_call_chain(DRM_EARLY_EVENT_BLANK, &g_notify_data);
+		msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &notify_data);
 		rc = dsi_panel_set_lp2(display->panel);
-		drm_notifier_call_chain(DRM_EVENT_BLANK, &g_notify_data);
+		msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &notify_data);
 		break;
 	case SDE_MODE_DPMS_ON:
 		if (display->panel->power_mode == SDE_MODE_DPMS_LP1 ||
 			display->panel->power_mode == SDE_MODE_DPMS_LP2) {
-			drm_notifier_call_chain(DRM_EARLY_EVENT_BLANK, &g_notify_data);
+
+			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &notify_data);
 			rc = dsi_panel_set_nolp(display->panel);
-			drm_notifier_call_chain(DRM_EVENT_BLANK, &g_notify_data);
+			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &notify_data);
 		}
 		break;
 	case SDE_MODE_DPMS_OFF:

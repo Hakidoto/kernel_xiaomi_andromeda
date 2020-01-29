@@ -2250,8 +2250,10 @@ int drm_mode_atomic_ioctl(struct drm_device *dev,
 
 #ifdef CONFIG_DEVFREQ_BOOST
 	if (!(arg->flags & DRM_MODE_ATOMIC_TEST_ONLY))
-		devfreq_boost_kick(DEVFREQ_CPU_LLCC_DDR_BW);
+		devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
+		devfreq_boost_kick(DEVFREQ_MSM_LLCCBW);
 #endif
+
 
 	drm_modeset_acquire_init(&ctx, 0);
 

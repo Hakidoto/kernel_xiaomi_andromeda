@@ -56,6 +56,19 @@ static DEFINE_MUTEX(thermal_list_lock);
 static DEFINE_MUTEX(thermal_governor_lock);
 static DEFINE_MUTEX(poweroff_lock);
 
+#ifdef CONFIG_DRM
+struct screen_monitor {
+	struct notifier_block thermal_notifier;
+	int screen_state;
+};
+
+struct screen_monitor sm;
+#endif
+
+static atomic_t switch_mode = ATOMIC_INIT(-1);
+static atomic_t temp_state = ATOMIC_INIT(0);
+static char boost_buf[128];
+
 static atomic_t in_suspend;
 static bool power_off_triggered;
 
@@ -1646,7 +1659,7 @@ static struct notifier_block thermal_pm_nb = {
 #ifdef CONFIG_DRM
 static ssize_t
 thermal_screen_state_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", sm.screen_state);
 }
@@ -1657,14 +1670,14 @@ static DEVICE_ATTR(screen_state, 0644,
 
 static ssize_t
 thermal_sconfig_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
+struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&switch_mode));
 }
 
 static ssize_t
 thermal_sconfig_store(struct device *dev,
-				      struct device_attribute *attr, const char *buf, size_t len)
+struct device_attribute *attr, const char *buf, size_t len)
 {
 	int val = -1;
 
@@ -1680,16 +1693,17 @@ static DEVICE_ATTR(sconfig, 0664,
 
 static ssize_t
 thermal_boost_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
+struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, boost_buf);
 }
 
 static ssize_t
 thermal_boost_store(struct device *dev,
-				      struct device_attribute *attr, const char *buf, size_t len)
+struct device_attribute *attr, const char *buf, size_t len)
 {
 	int ret;
+
 	ret = snprintf(boost_buf, PAGE_SIZE, buf);
 	return len;
 }
@@ -1699,14 +1713,14 @@ static DEVICE_ATTR(boost, 0644,
 
 static ssize_t
 thermal_temp_state_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
+struct device_attribute *attr, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&temp_state));
 }
 
 static ssize_t
 thermal_temp_state_store(struct device *dev,
-				      struct device_attribute *attr, const char *buf, size_t len)
+struct device_attribute *attr, const char *buf, size_t len)
 {
 	int val = -1;
 
@@ -1722,14 +1736,14 @@ static DEVICE_ATTR(temp_state, 0664,
 
 static ssize_t
 cpu_limits_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
+struct device_attribute *attr, char *buf)
 {
 	return 0;
 }
 
 static ssize_t
 cpu_limits_store(struct device *dev,
-				      struct device_attribute *attr, const char *buf, size_t len)
+struct device_attribute *attr, const char *buf, size_t len)
 {
 	unsigned int cpu;
 	unsigned int max;
@@ -1757,23 +1771,28 @@ static int create_thermal_message_node(void)
 	ret = device_register(&thermal_message_dev);
 	if (!ret) {
 #ifdef CONFIG_DRM
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_screen_state.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+			&dev_attr_screen_state.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create batt message node failed\n");
 #endif
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_sconfig.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+			&dev_attr_sconfig.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create sconfig node failed\n");
 
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_boost.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+			&dev_attr_boost.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create boost node failed\n");
 
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_temp_state.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+			&dev_attr_temp_state.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create temp state node failed\n");
 
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_cpu_limits.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+			&dev_attr_cpu_limits.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create cpu limits node failed\n");
 	}
@@ -1783,18 +1802,24 @@ static int create_thermal_message_node(void)
 
 static void destroy_thermal_message_node(void)
 {
-	sysfs_remove_file(&thermal_message_dev.kobj, &dev_attr_cpu_limits.attr);
-	sysfs_remove_file(&thermal_message_dev.kobj, &dev_attr_temp_state.attr);
-	sysfs_remove_file(&thermal_message_dev.kobj, &dev_attr_boost.attr);
-	sysfs_remove_file(&thermal_message_dev.kobj, &dev_attr_sconfig.attr);
+	sysfs_remove_file(&thermal_message_dev.kobj,
+		&dev_attr_cpu_limits.attr);
+	sysfs_remove_file(&thermal_message_dev.kobj,
+		&dev_attr_temp_state.attr);
+	sysfs_remove_file(&thermal_message_dev.kobj,
+		&dev_attr_boost.attr);
+	sysfs_remove_file(&thermal_message_dev.kobj,
+		&dev_attr_sconfig.attr);
 #ifdef CONFIG_DRM
-	sysfs_remove_file(&thermal_message_dev.kobj, &dev_attr_screen_state.attr);
+	sysfs_remove_file(&thermal_message_dev.kobj,
+		&dev_attr_screen_state.attr);
 #endif
 	device_unregister(&thermal_message_dev);
 }
 
 #ifdef CONFIG_DRM
-static int screen_state_for_thermal_callback(struct notifier_block *nb, unsigned long val, void *data)
+static int screen_state_for_thermal_callback(struct notifier_block *nb,
+	unsigned long val, void *data)
 {
 	struct msm_drm_notifier *evdata = data;
 	unsigned int blank;
@@ -1806,11 +1831,9 @@ static int screen_state_for_thermal_callback(struct notifier_block *nb, unsigned
 	switch (blank) {
 	case MSM_DRM_BLANK_POWERDOWN:
 		sm.screen_state = 0;
-		pr_warn("%s: MSM_DRM_BLANK_POWERDOWN\n", __func__);
 		break;
 	case MSM_DRM_BLANK_UNBLANK:
 		sm.screen_state = 1;
-		pr_warn("%s: MSM_DRM_BLANK_UNBLANK\n", __func__);
 		break;
 	default:
 		break;
@@ -1859,9 +1882,8 @@ static int __init thermal_init(void)
 
 #ifdef CONFIG_DRM
 	sm.thermal_notifier.notifier_call = screen_state_for_thermal_callback;
-	if (msm_drm_register_client(&sm.thermal_notifier) < 0) {
+	if (msm_drm_register_client(&sm.thermal_notifier) < 0)
 		pr_warn("Thermal: register screen state callback failed\n");
-	}
 #endif
 
 	return 0;

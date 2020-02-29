@@ -20,6 +20,8 @@
 #include <linux/notifier.h>
 #include <drm/drm_bridge.h>
 #include <linux/pm_wakeup.h>
+#include <linux/msm_drm_notify.h>
+#include <linux/notifier.h>
 
 #include "msm_kms.h"
 #include "sde_connector.h"
@@ -230,6 +232,8 @@ static void dsi_bridge_pre_enable(struct drm_bridge *bridge)
 		pr_err("Incorrect bridge details\n");
 		return;
 	}
+
+	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &notify_data);
 
 	atomic_set(&c_bridge->display->panel->esd_recovery_pending, 0);
 

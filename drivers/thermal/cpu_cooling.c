@@ -754,7 +754,6 @@ update_frequency:
 		if (cpufreq_cdev->plat_ops->ceil_limit)
 			cpufreq_cdev->plat_ops->ceil_limit(cpu,
 						clip_freq);
-
 		get_online_cpus();
 		cpufreq_update_policy(cpu);
 		put_online_cpus();

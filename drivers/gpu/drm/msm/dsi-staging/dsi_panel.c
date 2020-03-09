@@ -4885,6 +4885,7 @@ int dsi_panel_send_roi_dcs(struct dsi_panel *panel, int ctrl_idx,
 	return rc;
 }
 
+int skip_reinit = false;
 static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 {
 	int rc = 0;
@@ -5076,10 +5077,12 @@ static int panel_disp_param_send_lock(struct dsi_panel *panel, int param)
 	case DISPPARAM_DC_ON:
 		pr_info("DC on\n");
 		panel->dc_enable = true;
+		skip_reinit = true;
 		break;
 	case DISPPARAM_DC_OFF:
 		pr_info("DC off\n");
 		panel->dc_enable = false;
+		skip_reinit = false;
 		break;
 	case DISPPARAM_HBM_FOD_OFF:
 		pr_info("hbm fod off\n");

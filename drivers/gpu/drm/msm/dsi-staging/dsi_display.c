@@ -1243,6 +1243,9 @@ int dsi_display_set_power(struct drm_connector *connector,
 		pr_err("invalid display/panel\n");
 		return -EINVAL;
 	}
+	
+	g_notify_data.data = &power_mode;
+	g_notify_data.id = MSM_DRM_PRIMARY_DISPLAY;
 
         if (!connector || !connector->dev) {
                 pr_err("invalid connector/dev\n");
@@ -1252,7 +1255,7 @@ int dsi_display_set_power(struct drm_connector *connector,
                 event = dev->doze_state;
         }
 
-	g_notify_data.data = &event;
+
 	pr_info("%s %d\n", __func__, event);
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:

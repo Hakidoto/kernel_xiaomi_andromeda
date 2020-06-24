@@ -261,6 +261,7 @@ struct dsi_panel {
 
 	/* Display count */
 	bool panel_active_count_enable;
+	bool resend_ea_hbm;
 	u64 boottime;
 	u64 bootRTCtime;
 	u64 bootdays;

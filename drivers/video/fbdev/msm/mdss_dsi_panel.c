@@ -950,6 +950,8 @@ static int mdss_dsi_post_panel_on(struct mdss_panel_data *pdata)
 	mdss_dsi_post_panel_on_hdmi(pinfo);
 
 end:
+	/* clear idle state */
+	ctrl->idle = false;
 	pr_debug("%s:-\n", __func__);
 	return 0;
 }

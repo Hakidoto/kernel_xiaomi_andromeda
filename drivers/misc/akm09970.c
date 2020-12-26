@@ -13,7 +13,6 @@
  *
  */
 
-//#define DEBUG
 #define pr_fmt(fmt) "akm09970: %s: %d " fmt, __func__, __LINE__
 
 #include <linux/module.h>

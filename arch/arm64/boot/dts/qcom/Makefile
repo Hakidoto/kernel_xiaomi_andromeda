@@ -1,3 +1,26 @@
+ifeq ($(CONFIG_MACH_XIAOMI_SM8150),y)
+ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+dtbo-$(CONFIG_ARCH_SM8150) += \
+		andromeda-sm8150-overlay.dtbo \
+		andromeda-sm8150-p1-overlay.dtbo \
+		andromeda-sm8150-p1_1-overlay.dtbo \
+		andromeda-sm8150-p2-overlay.dtbo \
+		andromeda-sm8150-p2_1-overlay.dtbo \
+		andromeda-sm8150-p2_2-overlay.dtbo \
+		andromeda-sm8150-p2_21-overlay.dtbo \
+		andromeda-sm8150-p2_22-overlay.dtbo \
+
+andromeda-sm8150-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p1-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p1_1-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p2-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p2_1-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p2_2-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p2_21-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+andromeda-sm8150-p2_22-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+endif
+else
+
 # SPDX-License-Identifier: GPL-2.0
 ifeq ($(TARGET_BOARD_TYPE),auto)
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)

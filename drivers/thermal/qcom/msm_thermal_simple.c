@@ -95,7 +95,7 @@ static void thermal_throttle_worker(struct work_struct *work)
 	}
 
 	/* Emergency case */
-	if (temp_cpus_avg > 90000)
+	if (temp_cpus_avg > 90000 || temp_batt > 45000)
 		temp_avg = temp_cpus_avg;
 
 	old_zone = t->curr_zone;

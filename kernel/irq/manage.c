@@ -1201,7 +1201,7 @@ static void affine_one_perf_thread(struct irqaction *action)
 	if (action->flags & IRQF_PERF_AFFINE)
 		mask = cpu_perf_mask;
 	else
-		mask = cpu_prime_mask;
+		mask = cpu_perfp_mask;
 
 	action->thread->flags |= PF_PERF_CRITICAL;
 	set_cpus_allowed_ptr(action->thread, mask);
@@ -1226,7 +1226,7 @@ static void affine_one_perf_irq(struct irq_desc *desc, unsigned int perf_flag)
 		mask = cpu_perf_mask;
 		mask_index = &perf_cpu_index;
 	} else {
-		mask = cpu_prime_mask;
+		mask = cpu_perfp_mask;
 		mask_index = &prime_cpu_index;
 	}
 

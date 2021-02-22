@@ -58,6 +58,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/reset.h>
 #include <linux/extcon.h>
+#include <linux/pm_qos.h>
 #include "unipro.h"
 
 #include <asm/irq.h>
@@ -1041,6 +1042,24 @@ struct ufs_hba {
 	bool force_g4;
 	/* distinguish between resume and restore */
 	bool restore;
+
+#ifdef CONFIG_SCSI_UFS_CRYPTO
+       /* crypto */
+       union ufs_crypto_capabilities crypto_capabilities;
+       union ufs_crypto_cap_entry *crypto_cap_array;
+       u32 crypto_cfg_register;
+       struct keyslot_manager *ksm;
+       void *crypto_DO_NOT_USE[8];
+#endif /* CONFIG_SCSI_UFS_CRYPTO */
+
+	struct {
+		struct pm_qos_request req;
+		struct work_struct get_work;
+		struct work_struct put_work;
+		struct mutex lock;
+		atomic_t count;
+		bool active;
+	} pm_qos;
 };
 
 static inline void ufshcd_mark_shutdown_ongoing(struct ufs_hba *hba)

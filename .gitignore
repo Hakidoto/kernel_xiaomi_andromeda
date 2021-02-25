@@ -130,3 +130,10 @@ kernel/configs/android-*.cfg
 #Ignoring Android.bp link file
 #
 Android.bp
+
+# Compiler-related files and folders
+toolchain/
+out/
+mkdtboimg.py
+kernel.log
+dtbo.img

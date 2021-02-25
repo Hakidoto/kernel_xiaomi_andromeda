@@ -126,6 +126,9 @@ all.config
 # fetched Android config fragments
 kernel/configs/android-*.cfg
 
-# Toolchain folders
+# Compiler-related files and folders
 toolchain/
 out/
+mkdtboimg.py
+kernel.log
+dtbo.img

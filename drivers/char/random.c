@@ -1817,7 +1817,7 @@ void rand_initialize_disk(struct gendisk *disk)
 }
 #endif
 
-static ssize_t
+static ssize_t __maybe_unused
 _random_read(int nonblock, char __user *buf, size_t nbytes)
 {
 	ssize_t n;
@@ -1848,7 +1848,7 @@ _random_read(int nonblock, char __user *buf, size_t nbytes)
 	}
 }
 
-static ssize_t
+static ssize_t __maybe_unused
 random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 {
 	return _random_read(file->f_flags & O_NONBLOCK, buf, nbytes);

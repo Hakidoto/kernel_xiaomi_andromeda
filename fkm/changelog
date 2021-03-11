@@ -1,0 +1,7 @@
+Version 2.3 Changelog:
+
+- Set Frequency Timer to 300Hz
+- Temporally reverted Kdrag0n's energy model
+- Balancing scheduler up/down rate
+- Cleaned up all warnings and enabled WERROR
+- see github for moar :L

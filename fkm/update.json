@@ -2,7 +2,7 @@
     "kernel": {
       "name": "Hakidoto-andromeda",
       "version": "2.3",
-      "link": "https://github.com/Hakidoto/kernel_xiaomi_andromeda/releases/download/v2.3/Kernel-v2.3-fixup-75hz-AnyKernel3.zip",
+      "link": "https://github.com/Hakidoto/kernel_xiaomi_andromeda/releases/download/v2.3/Kernel-v2.3-fixup-75hz.zip",
       "changelog_url": "https://raw.githubusercontent.com/Hakidoto/kernel_xiaomi_andromeda/master/fkm/changelog",
       "date": "2021-03-12",
       "sha1": "492ef4e860fc25f9f73d134fbcb7262fbc10facb"

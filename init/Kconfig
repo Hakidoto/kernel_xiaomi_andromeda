@@ -1122,8 +1122,8 @@ config STUNE_ASSIST
 	depends on ANDROID
 	help
 	  This option enables in-kernel overrides for SchedTune values.
-	  	
-		If unsure, say N.
+	  
+	  If unsure, say N.
 
 config CPUSETS_ASSIST
 	bool "Cpuset configuration helper"
@@ -1132,7 +1132,7 @@ config CPUSETS_ASSIST
 	help
 	  This option enables in-kernel overrides for cpuset values.
 
-	  	If unsure, say N.
+	  If unsure, say N.
 
 
 

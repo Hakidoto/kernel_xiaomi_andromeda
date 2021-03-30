@@ -1,0 +1,4 @@
+# Kernel-related files and folders
+dtbo.img
+Image.gz-dtb
+*.zip

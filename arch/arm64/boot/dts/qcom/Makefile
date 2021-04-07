@@ -621,6 +621,8 @@ endif
 
 endif
 
+endif
+
 ifeq ($(CONFIG_ARM64),y)
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)

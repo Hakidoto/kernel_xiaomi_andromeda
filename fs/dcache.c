@@ -276,7 +276,7 @@ static void __d_free_external_name(struct rcu_head *head)
 						  u.head);
 
 	mod_node_page_state(page_pgdat(virt_to_page(name)),
-			    NR_INDIRECTLY_RECLAIMABLE_BYTES,
+			    NR_KERNEL_MISC_RECLAIMABLE,
 			    -ksize(name));
 
 	kfree(name);
@@ -1687,7 +1687,7 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
 
 	if (unlikely(ext)) {
 		pg_data_t *pgdat = page_pgdat(virt_to_page(ext));
-		mod_node_page_state(pgdat, NR_INDIRECTLY_RECLAIMABLE_BYTES,
+		mod_node_page_state(pgdat, NR_KERNEL_MISC_RECLAIMABLE,
 				    ksize(ext));
 	}
 

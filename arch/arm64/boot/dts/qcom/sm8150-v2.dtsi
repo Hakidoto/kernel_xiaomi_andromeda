@@ -494,11 +494,6 @@
 &energy_costs {
 	CPU_COST_0: core-cost0 {
 		busy-cost-data = <
-			46  24
-			63  25
-			78  27
-			90  29
-			105 33
 			120 37
 			132 42
 			147 47
@@ -520,9 +515,6 @@
 
 	CPU_COST_1: core-cost1 {
 		busy-cost-data = <
-			252 165
-			297 195
-			338 228
 			380 264
 			422 301
 			463 339
@@ -545,7 +537,6 @@
 
 	CPU_COST_2: core-cost2 {
 		busy-cost-data = <
-			297  227
 			338  262
 			380  302
 			421  348
@@ -573,11 +564,6 @@
 
 	CLUSTER_COST_0: cluster-cost0 {
 		busy-cost-data = <
-			46  3
-			63  4
-			78  4
-			90  4
-			105 5
 			120 5
 			132 6
 			147 7
@@ -599,9 +585,6 @@
 
 	CLUSTER_COST_1: cluster-cost1 {
 		busy-cost-data = <
-			252 25
-			297 26
-			338 27
 			380 28
 			422 29
 			463 30
@@ -624,7 +607,6 @@
 
 	CLUSTER_COST_2: cluster-cost2 {
 		busy-cost-data = <
-			297  30
 			338  33
 			380  36
 			421  39

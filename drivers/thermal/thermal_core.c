@@ -76,18 +76,6 @@ static struct thermal_governor *def_governor;
 
 static struct workqueue_struct *thermal_passive_wq;
 
-#ifdef CONFIG_DRM
-struct screen_monitor {
-	struct notifier_block thermal_notifier;
-	int screen_state; /* 1: on; 0:off */
-};
-
-struct screen_monitor sm;
-#endif
-
-static atomic_t switch_mode = ATOMIC_INIT(-1);
-static atomic_t temp_state = ATOMIC_INIT(0);
-static char boost_buf[128];
 
 /*
  * Governor section: set of functions to handle thermal governors

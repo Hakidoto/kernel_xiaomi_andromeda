@@ -18,8 +18,6 @@
 #include <uapi/linux/sched/types.h>
 #endif
 
-unsigned long last_input_time;
-
 enum {
 	SCREEN_OFF,
 	INPUT_BOOST,
@@ -65,6 +63,7 @@ static unsigned int get_max_boost_freq(struct cpufreq_policy *policy)
 {
 	unsigned int freq;
 
+	if (cpumask_test_cpu(policy->cpu, cpu_lp_mask))
 		freq = CONFIG_MAX_BOOST_FREQ_LP;
 	else
 		freq = CONFIG_MAX_BOOST_FREQ_PERF;
@@ -253,8 +252,6 @@ static void cpu_input_boost_input_event(struct input_handle *handle,
 	struct boost_drv *b = handle->handler->private;
 
 	__cpu_input_boost_kick(b);
-
-	last_input_time = jiffies;
 }
 
 static int cpu_input_boost_input_connect(struct input_handler *handler,

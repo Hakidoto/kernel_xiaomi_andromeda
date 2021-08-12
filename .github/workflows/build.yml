@@ -2,6 +2,7 @@ name: Kernel-Build
 
 on:
   push:
+    tags: '*'
     branches: [ Q ]
   pull_request:
     branches: [ Q ]

@@ -1,0 +1,30 @@
+name: Kernel-Build
+
+on:
+  push:
+    branches: [ Q ]
+  pull_request:
+    branches: [ Q ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kernel sauce
+        uses: actions/checkout@v2
+      - name: checkout AnyKernel3
+        uses: actions/checkout@v2
+        with:
+          repository: Hakidoto/AnyKernel3
+          path: zipper
+      - name: Android Kernel Build
+        uses: lemniskett/android-kernel-actions@v0.3.2
+        env:
+          NAME: Hadikernel
+        with:
+          arch: arm64
+          compiler: proton-clang/master
+          defconfig: andromeda_defconfig
+          image: Image.gz-dtb

@@ -22,9 +22,15 @@ jobs:
       - name: Android Kernel Build
         uses: Hakidoto/android-kernel-actions@master
         env:
-          NAME: Hadikernel
+          NAME: Hadikernel-75hz
         with:
           arch: arm64
           compiler: proton-clang/master
           defconfig: andromeda_defconfig
           image: Image.gz-dtb
+          
+      - name: Release build
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: ${{ steps.build.outputs.outfile }}
+          token: ${{ secrets.GITHUB_TOKEN }}

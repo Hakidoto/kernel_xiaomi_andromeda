@@ -20,7 +20,7 @@ jobs:
           repository: Hakidoto/AnyKernel3
           path: zipper
       - name: Android Kernel Build
-        uses: lemniskett/android-kernel-actions@v0.3.2
+        uses: Hakidoto/android-kernel-actions@master
         env:
           NAME: Hadikernel
         with:

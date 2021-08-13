@@ -9,6 +9,13 @@ commit=$(git rev-parse --short=5 HEAD)
 refreshrate='75hz'
 zipname=$(echo ${kernel_name}-${commit}-${refreshrate}.zip)
 
+# copy function
+
+copy_output () {
+    cp out/arch/arm64/boot/"Image.gz-dtb" "$zipper"/"Image.gz-dtb"
+    cp out/arch/arm64/boot/"dtbo.img" "$zipper"/"dtbo.img"
+}
+
 # Export proton-clang directory
 export PATH="/home/hakidoto/toolchains/proton-clang/bin:$PATH"
 
@@ -59,9 +66,3 @@ explorer.exe .
 exit 0
 
 
-# copy function
-
-copy_output () {
-    cp out/arch/arm64/boot/"Image.gz-dtb" "$zipper"/"Image.gz-dtb"
-    cp out/arch/arm64/boot/"dtbo.img" "$zipper"/"dtbo.img"
-}

@@ -45,10 +45,10 @@ find  . -name 'Hadikernel*' -exec rm {} \;
 
 if [[ -f "$zipper"/"Image.gz-dtb" && "$zipper"/"dtbo.img" ]]; then
     echo "kernel images exists, deleting..."
-    rm  "$zipper"/"Image.gz-dtb" && "$zipper"/"dtbo.img"
+    rm  "$zipper"/"Image.gz-dtb" &&  rm "$zipper"/"dtbo.img"
+    copy_output
 else
-    cp out/arch/arm64/boot/"Image.gz-dtb" "$zipper"/"Image.gz-dtb"
-    cp out/arch/arm64/boot/"dtbo.img" "$zipper"/"dtbo.img"
+    copy_output
 fi
 
 # zipping files
@@ -57,3 +57,11 @@ cd "$zipper" || exit 2
 zip -r9 "$zipname" . || exit 2
 explorer.exe .
 exit 0
+
+
+# copy function
+
+copy_output () {
+    cp out/arch/arm64/boot/"Image.gz-dtb" "$zipper"/"Image.gz-dtb"
+    cp out/arch/arm64/boot/"dtbo.img" "$zipper"/"dtbo.img"
+}

@@ -34,15 +34,6 @@ qcom,alium_860_89032_0000_3600mah_averaged_masterslave_sep24th2018 {
 	/* qcom,jeita-soft-thresholds = <0x4ccc 0x25e3>; */
 	/* COLD hys = 13 DegC, WARM hys = 37 DegC */
 	/*qcom,jeita-soft-hys-thresholds = <0x48d4 0x2943>;
-	/* Tweak SOC curve to be more linear and monotonic */
-    /* necessary for linearize-soc, like TCSS */
-    qcom,hold-soc-while-full;
-    /* scale MSOC with delta SOC after 100% */
-    qcom,linearize-soc;
-    /* scale SSOC with chg term current >= 90% to avoid jumps */
-    qcom,tcss-enable;
-    /* scale SSOC with BSOC to mitigate jumps */
-    qcom,bass-enable;
 	qcom,jeita-soft-fcc-ua = <2500000 2500000>;
 	qcom,jeita-soft-fv-uv = <4250000 4250000>;*/
 	qcom,ocv-based-step-chg;
@@ -56,6 +47,15 @@ qcom,alium_860_89032_0000_3600mah_averaged_masterslave_sep24th2018 {
 	qcom,rslow-normal-coeffs = <0xdf 0x02 0x77 0x1a>;
 	qcom,rslow-low-coeffs = <0x51 0x04 0xd0 0x13>;
 	qcom,checksum = <0x1538>;
+	/* Tweak SOC curve to be more linear and monotonic */
+    /* necessary for linearize-soc, like TCSS */
+    qcom,hold-soc-while-full;
+    /* scale MSOC with delta SOC after 100% */
+    qcom,linearize-soc;
+    /* scale SSOC with chg term current >= 90% to avoid jumps */
+    qcom,tcss-enable;
+    /* scale SSOC with BSOC to mitigate jumps */
+    qcom,bass-enable;
 	qcom,gui-version = "PM855GUI - 1.0.0.10";
 	qcom,fg-profile-data = [
 		09 00 C7 EA

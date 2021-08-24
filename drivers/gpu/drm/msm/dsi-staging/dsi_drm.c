@@ -27,8 +27,6 @@
 #include "sde_trace.h"
 #include "sde_encoder.h"
 
-static BLOCKING_NOTIFIER_HEAD(drm_notifier_list);
-
 #define to_dsi_bridge(x)     container_of((x), struct dsi_bridge, base)
 #define to_dsi_state(x)      container_of((x), struct dsi_connector_state, base)
 #define DEFAULT_PANEL_JITTER_NUMERATOR          2
@@ -189,7 +187,6 @@ static void dsi_bridge_pre_enable(struct drm_bridge *bridge)
 	struct dsi_bridge *c_bridge = to_dsi_bridge(bridge);
 	struct drm_device *dev = bridge->dev;
 	int event = 0;
-
 
 	if (dev->doze_state == MSM_DRM_BLANK_POWERDOWN)
 		dev->doze_state = MSM_DRM_BLANK_UNBLANK;
@@ -618,8 +615,6 @@ static const struct drm_bridge_funcs dsi_bridge_ops = {
 	.disable      = dsi_bridge_disable,
 	.post_disable = dsi_bridge_post_disable,
 	.mode_set     = dsi_bridge_mode_set,
-	.disp_param_set = dsi_bridge_disp_param_set,
-	.disp_get_panel_info = dsi_bridge_get_panel_info,
 };
 
 int dsi_conn_set_info_blob(struct drm_connector *connector,

@@ -2249,9 +2249,10 @@ int drm_mode_atomic_ioctl(struct drm_device *dev,
 		return -EINVAL;
 
 #ifdef CONFIG_DEVFREQ_BOOST
-	if (!(arg->flags & DRM_MODE_ATOMIC_TEST_ONLY))
+	if (!(arg->flags & DRM_MODE_ATOMIC_TEST_ONLY)){
 		devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
 		devfreq_boost_kick(DEVFREQ_MSM_LLCCBW);
+	}
 #endif
 
 

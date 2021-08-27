@@ -1933,7 +1933,7 @@ static int _sde_encoder_update_rsc_client(
 	else
 		rsc_state = enable ? ((disp_info->is_primary &&
 			(sde_encoder_check_curr_mode(drm_enc,
-			MSM_DISPLAY_CMD_MODE)) && !qsync_mode || framerate_override ) ?
+			MSM_DISPLAY_CMD_MODE)) && !qsync_mode) ?
 			SDE_RSC_CMD_STATE : SDE_RSC_VID_STATE) :
 			SDE_RSC_IDLE_STATE;
 
